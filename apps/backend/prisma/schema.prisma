@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  SALES
+}
+
+enum DealStage {
+  QUALIFIED
+  PROPOSED
+  NEGOTIATION
+  CLOSED
+}
+
+model Organization {
+  id              String           @id @default(uuid())
+  name            String
+  users           User[]
+  contacts        Contact[] // ✅ required!
+  deals           Deal[] // ✅ required if you want to seed deals too
+  messages        Message[]
+  recommendations Recommendation[]
+  createdAt       DateTime         @default(now())
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  passwordHash    String
+  role            Role
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  messages        Message[]
+  notifications   Notification[]
+  recommendations Recommendation[] // ✅ Add this
+  createdAt       DateTime         @default(now())
+}
+
+model Contact {
+  id             String       @id @default(uuid())
+  name           String
+  email          String
+  phone          String
+  company        String?
+  notes          String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  deals          Deal[]
+  createdAt      DateTime     @default(now())
+}
+
+model Deal {
+  id             String       @id @default(uuid())
+  name           String
+  value          Float
+  stage          DealStage
+  contactId      String?
+  contact        Contact?     @relation(fields: [contactId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  content        String
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+}
+
+model Recommendation {
+  id             String       @id @default(uuid())
+  suggestion     String
+  userId         String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  message   String
+  read      Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
